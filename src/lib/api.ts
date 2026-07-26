@@ -110,6 +110,93 @@ export const jobsApi = {
   },
 };
 
+// --- Search API ---
+
+export interface SemanticSearchParams {
+  q: string;
+  limit?: number;
+  location?: string;
+  is_remote?: boolean;
+  tags?: string[];
+}
+
+export interface SemanticSearchResult {
+  success: boolean;
+  data: ExternalJob[];
+  count: number;
+  query: string;
+}
+
+export interface SavedJob {
+  id: string;
+  user_id: string;
+  job_id?: string;
+  external_job_id?: string;
+  job_type: 'internal' | 'external';
+  notes?: string;
+  created_at: string;
+}
+
+export interface Recommendation {
+  job: ExternalJob;
+  match_score: number;
+  skills_matched: string[];
+  skills_missing: string[];
+  reason: string;
+  learning_suggestions: string[];
+}
+
+export const searchApi = {
+  semantic(params: SemanticSearchParams) {
+    const query = new URLSearchParams();
+    query.set('q', params.q);
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.location) query.set('location', params.location);
+    if (params.is_remote !== undefined) query.set('is_remote', String(params.is_remote));
+    if (params.tags?.length) params.tags.forEach(t => query.append('tags', t));
+    return apiFetch<SemanticSearchResult>(`/search/semantic?${query.toString()}`);
+  },
+
+  embedJob(jobId: string) {
+    return apiFetch<{ success: boolean; message: string }>(`/jobs/embed?job_id=${jobId}`, { method: 'POST' });
+  },
+
+  embedProfile() {
+    return apiFetch<{ success: boolean; message: string }>('/profile/embed', { method: 'POST' });
+  },
+};
+
+// --- Saved Jobs API ---
+
+export const savedJobsApi = {
+  list() {
+    return apiFetch<{ success: boolean; data: SavedJob[] }>('/saved-jobs');
+  },
+
+  save(jobId: string, jobType: 'internal' | 'external' = 'external', notes?: string) {
+    return apiFetch<{ success: boolean; data: SavedJob }>('/saved-jobs', {
+      method: 'POST',
+      body: JSON.stringify({ job_id: jobId, job_type: jobType, notes }),
+    });
+  },
+
+  remove(id: string) {
+    return apiFetch<{ success: boolean }>(`/saved-jobs/${id}`, { method: 'DELETE' });
+  },
+};
+
+// --- Recommendations API ---
+
+export const recommendationsApi = {
+  get(limit = 10) {
+    return apiFetch<{ success: boolean; data: Recommendation[] }>(`/recommendations?limit=${limit}`);
+  },
+
+  getReasons(limit = 5) {
+    return apiFetch<{ success: boolean; data: Recommendation[] }>(`/recommendations/reasons?limit=${limit}`);
+  },
+};
+
 // --- AI API ---
 
 export interface AISummaryResult {

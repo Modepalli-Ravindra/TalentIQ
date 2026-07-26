@@ -38,6 +38,37 @@ class JobRepository:
             logger.error(f"get_all_external_ids error: {e}")
             return {}
 
+    def get_content_hashes(self, source: str = "arbeitnow") -> Dict[str, str]:
+        try:
+            result = (
+                self.client.table(self.table)
+                .select("external_id, content_hash")
+                .eq("source", source)
+                .execute()
+            )
+            return {row["external_id"]: row.get("content_hash", "") for row in result.data}
+        except Exception as e:
+            logger.error(f"get_content_hashes error: {e}")
+            return {}
+
+    def mark_expired(self, external_ids: List[str], source: str = "arbeitnow") -> int:
+        if not external_ids:
+            return 0
+        try:
+            from datetime import datetime
+            updated = 0
+            for eid in external_ids:
+                self.client.table(self.table).update({
+                    "sync_status": "expired",
+                    "updated_at": datetime.utcnow().isoformat(),
+                }).eq("external_id", eid).eq("source", source).execute()
+                updated += 1
+            logger.info(f"Marked {updated} jobs as expired")
+            return updated
+        except Exception as e:
+            logger.error(f"mark_expired error: {e}")
+            return 0
+
     def bulk_insert(self, records: List[Dict]) -> int:
         if not records:
             return 0

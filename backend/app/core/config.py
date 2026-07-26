@@ -50,6 +50,18 @@ class Settings:
 
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
+    # Phase 2: Email
+    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "resend")
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@talentiq.ai")
+
+    # Phase 2: Embedding
+    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION", "512"))
+
+    # Phase 2: Redis
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
+
     def validate(self) -> None:
         missing = []
         if not self.JWT_SECRET:

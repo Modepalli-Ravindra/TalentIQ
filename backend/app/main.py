@@ -12,10 +12,15 @@ import time
 from app.core.config import settings
 from app.core.logging_config import setup_logging
 from app.core.exceptions import register_exception_handlers
+from app.core.audit_logger import AuditMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.ai import router as ai_router
 from app.api.v1.health import router as health_router
+from app.api.v1.semantic_search import router as search_router
+from app.api.v1.recommendations import router as recommendations_router
+from app.api.v1.saved_jobs import router as saved_jobs_router
+from app.api.v1.recent_jobs import router as recent_jobs_router
 
 setup_logging(settings.LOG_LEVEL)
 logger = logging.getLogger("talentiq")
@@ -30,11 +35,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
 
+        from app.api.v1.health import record_request
+        record_request(status_code, path)
+
         if status_code >= 500:
             logger.error(f"{method} {path} -> {status_code} ({duration:.3f}s)")
         elif status_code >= 400:
             logger.warning(f"{method} {path} -> {status_code} ({duration:.3f}s)")
-        elif not path.startswith("/health"):
+        elif not path.startswith("/health") and not path.startswith("/metrics"):
             logger.info(f"{method} {path} -> {status_code} ({duration:.3f}s)")
 
         return response
@@ -88,6 +96,7 @@ app = FastAPI(
 )
 
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(AuditMiddleware)
 app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
@@ -106,6 +115,10 @@ app.include_router(health_router, tags=["Health"])
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(jobs_router, prefix=settings.API_V1_STR, tags=["Jobs & ETL"])
 app.include_router(ai_router, prefix=settings.API_V1_STR, tags=["AI"])
+app.include_router(search_router, prefix=settings.API_V1_STR, tags=["Search"])
+app.include_router(recommendations_router, prefix=settings.API_V1_STR, tags=["Recommendations"])
+app.include_router(saved_jobs_router, prefix=settings.API_V1_STR, tags=["Saved Jobs"])
+app.include_router(recent_jobs_router, prefix=settings.API_V1_STR, tags=["Recent Jobs"])
 
 
 @app.get("/", tags=["Root"])

@@ -123,7 +123,8 @@ class TestHealthEndpoint:
              patch("app.api.v1.health._check_groq", return_value={"status": "healthy", "message": "ok"}), \
              patch("app.api.v1.health._check_supabase", return_value={"status": "healthy", "message": "ok"}), \
              patch("app.api.v1.health._check_scheduler", return_value={"status": "healthy", "message": "ok"}), \
-             patch("app.api.v1.health._check_cache", return_value={"status": "healthy", "message": "ok"}):
+             patch("app.api.v1.health._check_cache", return_value={"status": "healthy", "message": "ok"}), \
+             patch("app.api.v1.health._check_email", return_value={"status": "healthy", "message": "ok"}):
             response = client.get("/health")
             assert response.status_code == 200
             data = response.json()

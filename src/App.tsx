@@ -8,6 +8,8 @@ import { CommandPalette } from './components/ui/CommandPalette';
 import { AuthModal } from './components/auth/AuthModal';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { NotificationsPanel } from './components/notifications/NotificationsPanel';
+import { OfflineBanner } from './components/ui/EmptyState';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { UserRole, JobPosting, CandidateApplication, ExternalJob } from './types';
 import { jobService, applicationService, isSupabaseConfigured } from './lib/supabase';
 import { MOCK_CANDIDATE, MOCK_APPLICATIONS } from './data/mockData';
@@ -23,6 +25,7 @@ const SettingsPage = lazy(() => import('./views/SettingsPage').then(m => ({ defa
 const SearchPage = lazy(() => import('./views/SearchPage').then(m => ({ default: m.SearchPage })));
 const CompanyPage = lazy(() => import('./views/CompanyPage').then(m => ({ default: m.CompanyPage })));
 const CandidateProfilePage = lazy(() => import('./views/CandidateProfilePage').then(m => ({ default: m.CandidateProfilePage })));
+const SavedJobsPage = lazy(() => import('./components/jobs/SavedJobsPage').then(m => ({ default: m.SavedJobsPage })));
 
 // Lazy-loaded Modals
 const JobDetailsModal = lazy(() => import('./components/jobs/JobDetailsModal').then(m => ({ default: m.JobDetailsModal })));
@@ -40,6 +43,7 @@ function ViewLoader() {
 function MainAppContent() {
   const { isAuthenticated, user } = useAuth();
   const [currentView, setCurrentView] = useState<string>('landing');
+  const isOnline = useOnlineStatus();
 
   // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -162,6 +166,7 @@ function MainAppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#09090B] text-white selection:bg-blue-500/30 selection:text-blue-200">
+      <OfflineBanner isOnline={isOnline} />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -246,6 +251,10 @@ function MainAppContent() {
         {currentView === 'admin-dashboard' && isAuthenticated && <AdminDashboard />}
 
         {currentView === 'settings' && isAuthenticated && <SettingsPage />}
+
+        {currentView === 'saved-jobs' && isAuthenticated && (
+          <SavedJobsPage onJobSelect={(job) => setSelectedExternalJob(job)} />
+        )}
 
         {currentView === 'company' && selectedCompanyId && (
           <CompanyPage companyId={selectedCompanyId} onBack={() => handleNavigateView('search')} />

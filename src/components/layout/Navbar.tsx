@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Sparkles, Search, User as UserIcon, Briefcase, BarChart3, Command, ChevronDown, ShieldCheck, Lock, LogOut, LogIn, Bell, Settings } from 'lucide-react';
+import { Sparkles, Search, User as UserIcon, Briefcase, BarChart3, Command, ChevronDown, ShieldCheck, Lock, LogOut, LogIn, Bell, Settings, Bookmark } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NotificationContext } from '../../context/NotificationContext';
 
@@ -33,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'search', label: 'Search', icon: Search, public: false },
     { id: 'candidate-dashboard', label: 'Dashboard', icon: UserIcon, public: false, role: 'candidate' },
     { id: 'candidate-profile', label: 'Profile', icon: UserIcon, public: false, role: 'candidate' },
+    { id: 'saved-jobs', label: 'Saved', icon: Bookmark, public: false, role: 'candidate' },
     { id: 'recruiter-dashboard', label: 'Recruiter', icon: Sparkles, public: false, role: 'recruiter' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, public: false },
     { id: 'admin-dashboard', label: 'Admin', icon: ShieldCheck, public: false, role: 'admin' },

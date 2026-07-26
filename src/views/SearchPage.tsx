@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Search, Sparkles, Building2, Users, Briefcase, Loader2 } from 'lucide-react';
+import { Search, Sparkles, Building2, Users, Briefcase, Loader2, Zap } from 'lucide-react';
 import { Company } from '../types';
 import { companyService, isSupabaseConfigured } from '../lib/supabase';
 import { useJobSearch } from '../hooks/useJobs';
 import { ExternalJobCard } from '../components/jobs/ExternalJobCard';
+import { SemanticSearchBar } from '../components/search/SemanticSearchBar';
 import { ExternalJob } from '../types';
 
 interface SearchPageProps {
@@ -23,6 +24,9 @@ export function SearchPage({ onSelectJob, onAnalyzeFit, onSelectCompany, onExter
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [page, setPage] = useState(1);
+  const [semanticMode, setSemanticMode] = useState(true);
+  const [semanticResults, setSemanticResults] = useState<any[]>([]);
+  const [semanticLoading, setSemanticLoading] = useState(false);
 
   const { data, isLoading } = useJobSearch({
     keyword: searchQuery || undefined,
@@ -46,8 +50,9 @@ export function SearchPage({ onSelectJob, onAnalyzeFit, onSelectCompany, onExter
   const availableTechs = ['React', 'Python', 'TypeScript', 'Java', 'Go', 'Rust', 'Node.js', 'AWS'];
 
   const jobs = data?.data || [];
-  const totalCount = data?.count || 0;
-  const totalPages = data?.total_pages || 1;
+  const displayJobs = semanticMode ? semanticResults : jobs;
+  const totalCount = semanticMode ? semanticResults.length : (data?.count || 0);
+  const totalPages = semanticMode ? 1 : (data?.total_pages || 1);
 
   const handleExternalJobSelect = (ext: ExternalJob) => {
     onExternalJobSelect?.(ext);
@@ -90,38 +95,71 @@ export function SearchPage({ onSelectJob, onAnalyzeFit, onSelectCompany, onExter
 
       {/* Search & Filters */}
       <div className="p-4 bg-[#18181B] border border-[#27272A] rounded-2xl space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center bg-[#09090B] border border-[#27272A] rounded-xl px-4 py-3 gap-3 focus-within:border-blue-500 transition-colors">
-            <Search className="w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={`Search ${activeTab}...`}
-              className="w-full bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none"
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
-              onKeyDown={e => { if (e.key === 'Enter') setPage(1); }}
-            />
+        {/* Search Mode Toggle */}
+        {activeTab === 'jobs' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSemanticMode(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                !semanticMode ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5" /> Keyword
+            </button>
+            <button
+              onClick={() => setSemanticMode(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                semanticMode ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" /> Semantic AI
+            </button>
           </div>
-          {activeTab === 'jobs' && (
-            <>
-              <button
-                onClick={() => { setRemoteOnly(!remoteOnly); setPage(1); }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold border transition-all ${
-                  remoteOnly ? 'bg-blue-600/20 border-blue-500 text-blue-300' : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:text-white'
-                }`}
-              >
-                Remote Only
-              </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold border transition-all ${
-                  showFilters ? 'bg-blue-600/20 border-blue-500 text-blue-300' : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:text-white'
-                }`}
-              >
-                Filters
-              </button>
-            </>
-          )}
+        )}
+
+        {activeTab === 'jobs' && semanticMode ? (
+          <SemanticSearchBar
+            onResults={(results, q) => {
+              setSemanticResults(results);
+              setSearchQuery(q);
+            }}
+            onLoading={setSemanticLoading}
+          />
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 flex items-center bg-[#09090B] border border-[#27272A] rounded-xl px-4 py-3 gap-3 focus-within:border-blue-500 transition-colors">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder={`Search ${activeTab}...`}
+                className="w-full bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                onKeyDown={e => { if (e.key === 'Enter') setPage(1); }}
+              />
+            </div>
+            {activeTab === 'jobs' && (
+              <>
+                <button
+                  onClick={() => { setRemoteOnly(!remoteOnly); setPage(1); }}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold border transition-all ${
+                    remoteOnly ? 'bg-blue-600/20 border-blue-500 text-blue-300' : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Remote Only
+                </button>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold border transition-all ${
+                    showFilters ? 'bg-blue-600/20 border-blue-500 text-blue-300' : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Filters
+                </button>
+              </>
+            )}
+          </div>
+        )}
         </div>
 
         {showFilters && activeTab === 'jobs' && (
@@ -162,20 +200,20 @@ export function SearchPage({ onSelectJob, onAnalyzeFit, onSelectCompany, onExter
       </div>
 
       {/* Results */}
-      {isLoading && activeTab === 'jobs' ? (
+      {(isLoading && !semanticMode) || semanticLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
         </div>
       ) : activeTab === 'jobs' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {jobs.length === 0 ? (
+          {displayJobs.length === 0 ? (
             <div className="col-span-2 py-16 text-center bg-[#18181B] border border-[#27272A] rounded-2xl">
               <Search className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <h3 className="text-base font-bold text-white">No jobs found</h3>
               <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters</p>
             </div>
           ) : (
-            jobs.map(job => (
+            displayJobs.map(job => (
               <ExternalJobCard key={job.id} job={job} onSelect={() => handleExternalJobSelect(job)} />
             ))
           )}

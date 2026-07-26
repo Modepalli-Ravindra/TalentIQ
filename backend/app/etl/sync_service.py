@@ -1,5 +1,6 @@
 import logging
 import time
+import hashlib
 from datetime import datetime
 from app.etl.arbeitnow_client import fetch_all_jobs
 from app.etl.deduplicator import deduplicate_jobs
@@ -14,6 +15,19 @@ from app.etl.ai_placeholder import (
 from app.etl.models import SyncReport, ExternalJobRecord
 
 logger = logging.getLogger("talentiq.etl.sync_service")
+
+
+def _compute_hash(record: dict) -> str:
+    """Compute content hash for change detection."""
+    key_fields = [
+        record.get("title", ""),
+        record.get("company_name", ""),
+        record.get("description", ""),
+        record.get("location", ""),
+        str(record.get("tags", "")),
+    ]
+    content = "|".join(key_fields)
+    return hashlib.sha256(content.encode()).hexdigest()
 
 
 def enrich_with_ai(record: ExternalJobRecord) -> dict:
@@ -42,6 +56,7 @@ class JobSyncService:
             logger.info(f"Fetched {len(raw_jobs)} jobs from Arbeitnow")
 
             existing_ids = self.repo.get_all_external_ids(source="arbeitnow")
+            existing_hashes = self.repo.get_content_hashes(source="arbeitnow")
             report.duplicates = 0
 
             to_insert, to_update, dup_count = deduplicate_jobs(raw_jobs, existing_ids)
@@ -49,6 +64,10 @@ class JobSyncService:
 
             if to_insert:
                 enriched_insert = [enrich_with_ai(job) for job in to_insert]
+                for record in enriched_insert:
+                    record["content_hash"] = _compute_hash(record)
+                    record["sync_status"] = "active"
+                    record["last_synced_at"] = datetime.utcnow().isoformat()
                 inserted = self.repo.bulk_insert(enriched_insert)
                 report.imported = inserted
                 logger.info(f"Imported {inserted} new jobs")
@@ -60,10 +79,24 @@ class JobSyncService:
                     existing_id = existing_ids.get(job.external_id)
                     if existing_id:
                         enriched["id"] = existing_id
+                        new_hash = _compute_hash(enriched)
+                        old_hash = existing_hashes.get(job.external_id, "")
+                        if new_hash == old_hash:
+                            continue
+                        enriched["content_hash"] = new_hash
+                        enriched["last_synced_at"] = datetime.utcnow().isoformat()
                     enriched_update.append(enriched)
                 updated = self.repo.bulk_update(enriched_update)
                 report.updated = updated
                 logger.info(f"Updated {updated} existing jobs")
+
+            active_ids = {job.external_id for job in to_insert + to_update}
+            all_existing = set(existing_ids.keys())
+            expired_ids = all_existing - active_ids - {d for d in set()}
+            if expired_ids:
+                expired_count = self.repo.mark_expired(list(expired_ids), source="arbeitnow")
+                report.failed += expired_count
+                logger.info(f"Marked {expired_count} jobs as expired")
 
             report.status = "success"
 
