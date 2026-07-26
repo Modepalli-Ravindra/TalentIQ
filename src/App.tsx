@@ -26,6 +26,11 @@ const SearchPage = lazy(() => import('./views/SearchPage').then(m => ({ default:
 const CompanyPage = lazy(() => import('./views/CompanyPage').then(m => ({ default: m.CompanyPage })));
 const CandidateProfilePage = lazy(() => import('./views/CandidateProfilePage').then(m => ({ default: m.CandidateProfilePage })));
 const SavedJobsPage = lazy(() => import('./components/jobs/SavedJobsPage').then(m => ({ default: m.SavedJobsPage })));
+const InterviewsPage = lazy(() => import('./components/interviews/InterviewsPage').then(m => ({ default: m.InterviewsPage })));
+const CopilotPage = lazy(() => import('./components/copilot/CopilotPage').then(m => ({ default: m.CopilotPage })));
+const ResumeImprovementPage = lazy(() => import('./components/resume/ResumeImprovementPage').then(m => ({ default: m.ResumeImprovementPage })));
+const CandidateComparisonPage = lazy(() => import('./components/comparison/CandidateComparisonPage').then(m => ({ default: m.CandidateComparisonPage })));
+const CompanyVerificationPage = lazy(() => import('./components/verification/CompanyVerificationPage').then(m => ({ default: m.CompanyVerificationPage })));
 
 // Lazy-loaded Modals
 const JobDetailsModal = lazy(() => import('./components/jobs/JobDetailsModal').then(m => ({ default: m.JobDetailsModal })));
@@ -254,6 +259,26 @@ function MainAppContent() {
 
         {currentView === 'saved-jobs' && isAuthenticated && (
           <SavedJobsPage onJobSelect={(job) => setSelectedExternalJob(job)} />
+        )}
+
+        {currentView === 'interviews' && isAuthenticated && (
+          <InterviewsPage onJobSelect={(job) => setSelectedExternalJob(job)} />
+        )}
+
+        {currentView === 'copilot' && isAuthenticated && (
+          <CopilotPage />
+        )}
+
+        {currentView === 'resume-improve' && isAuthenticated && (
+          <ResumeImprovementPage />
+        )}
+
+        {currentView === 'compare' && isAuthenticated && (
+          <CandidateComparisonPage />
+        )}
+
+        {currentView === 'company-verify' && isAuthenticated && (
+          <CompanyVerificationPage />
         )}
 
         {currentView === 'company' && selectedCompanyId && (

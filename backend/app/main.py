@@ -21,6 +21,12 @@ from app.api.v1.semantic_search import router as search_router
 from app.api.v1.recommendations import router as recommendations_router
 from app.api.v1.saved_jobs import router as saved_jobs_router
 from app.api.v1.recent_jobs import router as recent_jobs_router
+from app.api.v1.interviews import router as interviews_router
+from app.api.v1.calendar import router as calendar_router
+from app.api.v1.copilot import router as copilot_router
+from app.api.v1.resume_improvement import router as resume_router
+from app.api.v1.comparison import router as comparison_router
+from app.api.v1.company_verification import router as verification_router
 
 setup_logging(settings.LOG_LEVEL)
 logger = logging.getLogger("talentiq")
@@ -119,6 +125,12 @@ app.include_router(search_router, prefix=settings.API_V1_STR, tags=["Search"])
 app.include_router(recommendations_router, prefix=settings.API_V1_STR, tags=["Recommendations"])
 app.include_router(saved_jobs_router, prefix=settings.API_V1_STR, tags=["Saved Jobs"])
 app.include_router(recent_jobs_router, prefix=settings.API_V1_STR, tags=["Recent Jobs"])
+app.include_router(interviews_router, prefix=settings.API_V1_STR, tags=["Interviews"])
+app.include_router(calendar_router, prefix=settings.API_V1_STR, tags=["Calendar"])
+app.include_router(copilot_router, prefix=settings.API_V1_STR, tags=["Copilot"])
+app.include_router(resume_router, prefix=settings.API_V1_STR, tags=["Resume"])
+app.include_router(comparison_router, prefix=settings.API_V1_STR, tags=["Comparison"])
+app.include_router(verification_router, prefix=settings.API_V1_STR, tags=["Company Verification"])
 
 
 @app.get("/", tags=["Root"])
