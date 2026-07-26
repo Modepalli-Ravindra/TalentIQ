@@ -1,0 +1,313 @@
+{
+  "info": {
+    "name": "TalentIQ AI Core API",
+    "description": "Complete API collection for TalentIQ AI - AI-powered hiring platform.\n\n## Authentication\nAll `/api/v1/ai/*` endpoints require a Bearer token in the Authorization header.\n\n## Rate Limits\nAI endpoints are rate-limited per IP:\n- Per minute: varies by endpoint (5-10)\n- Per hour: varies by endpoint (30-60)\n\nRate limit headers are returned in every response.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "auth_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health",
+            "description": "Returns health status of all application services"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alex.rivera@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "description": "Authenticate user and receive JWT token"
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/register",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"new@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"candidate\"\n}"
+            },
+            "description": "Register a new user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me?token={{auth_token}}",
+            "description": "Get current authenticated user details"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "List Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs?page=1&per_page=20&sort_by=published_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "jobs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" },
+                { "key": "sort_by", "value": "published_at" },
+                { "key": "sort_order", "value": "desc" }
+              ]
+            },
+            "description": "Get paginated list of external jobs"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs/search?keyword=python&is_remote=true&page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "jobs", "search"],
+              "query": [
+                { "key": "keyword", "value": "python" },
+                { "key": "is_remote", "value": "true" },
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "Search jobs with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/jobs/{{job_id}}",
+            "description": "Get a single job by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Recommended Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/jobs/recommended?skills=python&skills=react&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "jobs", "recommended"],
+              "query": [
+                { "key": "skills", "value": "python" },
+                { "key": "skills", "value": "react" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Get job recommendations based on skills"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ETL",
+      "item": [
+        {
+          "name": "Trigger Sync",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/etl/jobs/sync?max_pages=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "etl", "jobs", "sync"],
+              "query": [
+                { "key": "max_pages", "value": "5" }
+              ]
+            },
+            "description": "Manually trigger ETL sync from Arbeitnow API. Requires authentication."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Summarize Job",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/summarize",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"We are looking for a Senior Software Engineer to join our growing team. The ideal candidate will have 5+ years of experience in backend development, strong knowledge of Python and cloud services, and a passion for building scalable systems.\",\n  \"max_sentences\": 3\n}"
+            },
+            "description": "AI-powered job description summarizer"
+          },
+          "response": []
+        },
+        {
+          "name": "Parse Resume",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/parse-resume",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resume_text\": \"John Doe\\nSoftware Engineer\\njohn@example.com\\n\\nEXPERIENCE\\nSenior Developer at TechCorp (2020-2024)\\n- Built microservices in Python and Go\\n- Led team of 5 engineers\\n\\nSKILLS\\nPython, JavaScript, React, AWS, Docker\\n\\nEDUCATION\\nBS Computer Science, MIT 2018\"\n}"
+            },
+            "description": "Parse resume text into structured data"
+          },
+          "response": []
+        },
+        {
+          "name": "Extract Skills",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/extract-skills",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Looking for a React developer with TypeScript, Node.js, and PostgreSQL experience. AWS deployment knowledge is a plus.\"\n}"
+            },
+            "description": "Extract skills from job or profile text"
+          },
+          "response": []
+        },
+        {
+          "name": "Fit Analysis",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/fit-analysis",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_description\": \"Senior React Developer with 5+ years experience. TypeScript, GraphQL, and testing required.\",\n  \"candidate_profile\": {\n    \"name\": \"Jane Smith\",\n    \"skills\": [\"React\", \"TypeScript\", \"JavaScript\", \"CSS\"],\n    \"experience_years\": 4,\n    \"education\": \"BS Computer Science\"\n  }\n}"
+            },
+            "description": "AI-powered candidate-job fit analysis"
+          },
+          "response": []
+        },
+        {
+          "name": "Bias Analysis",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/bias-analysis",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_text\": \"Looking for a young energetic developer who can work long hours in a fast-paced startup environment. Must be a cultural fit.\"\n}"
+            },
+            "description": "Analyze job posting for potential biases"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Email",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/generate-email",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email_type\": \"interview\",\n  \"candidate_name\": \"John Doe\",\n  \"job_title\": \"Senior Engineer\",\n  \"company\": \"TechCorp\"\n}"
+            },
+            "description": "Generate recruitment email"
+          },
+          "response": []
+        },
+        {
+          "name": "Task Suggestions",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/task-suggestions",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pending_applications\": 15,\n  \"interviews_scheduled\": 3,\n  \"open_positions\": 5,\n  \"recent_activity\": \"Reviewed 10 resumes today\",\n  \"day_of_week\": \"Monday\"\n}"
+            },
+            "description": "Get AI-powered task suggestions"
+          },
+          "response": []
+        },
+        {
+          "name": "Chat",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/ai/chat",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"What are the best practices for technical interviews?\"\n}"
+            },
+            "description": "Chat with AI recruitment assistant"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
