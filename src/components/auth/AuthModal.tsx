@@ -22,6 +22,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('candidate');
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // If auth succeeded via Supabase listener, close modal
   if (isAuthenticated && !loading) {
     onClose();
     if (onSuccessRedirect) onSuccessRedirect();
@@ -45,29 +45,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       if (mode === 'login') {
-        await login(email, password, role);
+        await login(email, password);
         onClose();
         if (onSuccessRedirect) onSuccessRedirect();
       } else {
+        if (password !== confirmPassword) {
+          setError('Passwords do not match.');
+          setLoading(false);
+          return;
+        }
+        if (!name.trim()) {
+          setError('Please enter your name.');
+          setLoading(false);
+          return;
+        }
         await register(name, email, password, role);
-        // After register, Supabase may require email confirmation
-        setSuccessMsg(
-          'Account created! Check your email for a confirmation link, then sign in.'
-        );
-        setMode('login');
-        setPassword('');
+        onClose();
+        if (onSuccessRedirect) onSuccessRedirect();
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
-      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-        setError('Incorrect email or password. Please try again.');
-      } else if (msg.includes('Email not confirmed')) {
-        setError('Please confirm your email first. Check your inbox for the confirmation link.');
-      } else if (msg.includes('User already registered')) {
+      if (msg.includes('already exists') || msg.includes('already registered')) {
         setError('An account with this email already exists. Try signing in instead.');
-        setMode('login');
-      } else if (msg.includes('Password should be')) {
-        setError('Password must be at least 6 characters.');
       } else {
         setError(msg || 'Something went wrong. Please try again.');
       }
@@ -76,10 +75,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setName('');
+    setError(null);
+    setSuccessMsg(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] bg-[#111827]">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30">
@@ -87,7 +94,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                {mode === 'login' ? 'Sign In to TalentIQ AI' : 'Create Intelligence Account'}
+                {mode === 'login' ? 'Sign In to TalentIQ AI' : 'Create Your Account'}
               </h2>
               <p className="text-xs text-gray-400">Required to access {targetViewLabel}</p>
             </div>
@@ -97,10 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Content Body */}
         <div className="p-6 space-y-4">
-
-          {/* Success Message */}
           {successMsg && (
             <div className="flex items-start gap-2.5 p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
               <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
@@ -108,7 +112,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Error Message */}
           {error && (
             <div className="flex items-start gap-2.5 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
               <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
@@ -116,7 +119,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {mode === 'register' && (
               <div>
@@ -126,7 +128,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Alex Rivera"
+                    placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-transparent text-xs text-white focus:outline-none placeholder:text-gray-600"
@@ -168,23 +170,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {mode === 'register' && (
               <div>
-                <label className="text-xs font-mono text-gray-400 block mb-1">Role</label>
+                <label className="text-xs font-mono text-gray-400 block mb-1">Confirm Password</label>
+                <div className="flex items-center bg-[#09090B] border border-[#27272A] focus-within:border-blue-500/60 rounded-xl px-3 py-2.5 gap-2 transition-colors">
+                  <Lock className="w-4 h-4 text-gray-500 shrink-0" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Re-enter password"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+                    className="w-full bg-transparent text-xs text-white focus:outline-none placeholder:text-gray-600"
+                  />
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-[10px] text-rose-400 mt-1">Passwords do not match</p>
+                )}
+              </div>
+            )}
+
+            {mode === 'register' && (
+              <div>
+                <label className="text-xs font-mono text-gray-400 block mb-1">I am a</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setRole('candidate')}
-                    className={`p-2 rounded-xl text-xs font-semibold border transition-all ${
+                    className={`p-2.5 rounded-xl text-xs font-semibold border transition-all ${
                       role === 'candidate'
                         ? 'bg-blue-600/20 border-blue-500 text-blue-300'
                         : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:border-gray-500'
                     }`}
                   >
-                    Candidate
+                    Job Seeker
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole('recruiter')}
-                    className={`p-2 rounded-xl text-xs font-semibold border transition-all ${
+                    className={`p-2.5 rounded-xl text-xs font-semibold border transition-all ${
                       role === 'recruiter'
                         ? 'bg-purple-600/20 border-purple-500 text-purple-300'
                         : 'bg-[#09090B] border-[#27272A] text-gray-400 hover:border-gray-500'
@@ -212,10 +235,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* Toggle Mode */}
           <div className="text-center pt-1 border-t border-[#27272A]">
             <button
-              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setSuccessMsg(null); }}
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); resetForm(); }}
               className="text-xs text-blue-400 hover:underline font-semibold"
             >
               {mode === 'login'
