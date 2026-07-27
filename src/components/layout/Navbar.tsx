@@ -157,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Sign Out"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Sign Out</span>
+                  <span className="text-xs">Sign Out</span>
                 </button>
               </div>
             ) : (
