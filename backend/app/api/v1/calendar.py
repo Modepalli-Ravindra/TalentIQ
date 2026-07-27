@@ -37,7 +37,7 @@ def _get_repo():
 @router.get("/calendar/connections")
 async def list_connections(current_user: dict = Depends(get_current_user)):
     repo = _get_repo()
-    connections = repo.get_connections(current_user["id"])
+    connections = repo.get_connections(current_user["user_id"])
     safe = [{k: v for k, v in c.items() if k not in ("access_token", "refresh_token")} for c in connections]
     return {"success": True, "data": safe, "count": len(safe)}
 
@@ -46,7 +46,7 @@ async def list_connections(current_user: dict = Depends(get_current_user)):
 async def connect_calendar(data: CalendarConnect, current_user: dict = Depends(get_current_user)):
     repo = _get_repo()
     conn = repo.upsert_connection(
-        user_id=current_user["id"],
+        user_id=current_user["user_id"],
         provider=data.provider,
         data={
             "access_token": data.access_token,
@@ -65,7 +65,7 @@ async def connect_calendar(data: CalendarConnect, current_user: dict = Depends(g
 async def disconnect_calendar(connection_id: str, current_user: dict = Depends(get_current_user)):
     repo = _get_repo()
     conn = repo.get_connection(connection_id)
-    if not conn or conn["user_id"] != current_user["id"]:
+    if not conn or conn["user_id"] != current_user["user_id"]:
         raise HTTPException(status_code=404, detail="Connection not found")
     repo.delete_connection(connection_id)
     return {"success": True}
@@ -78,7 +78,7 @@ async def list_events(
     current_user: dict = Depends(get_current_user),
 ):
     repo = _get_repo()
-    events = repo.list_events(current_user["id"], start=start, end=end)
+    events = repo.list_events(current_user["user_id"], start=start, end=end)
     return {"success": True, "data": events, "count": len(events)}
 
 
@@ -86,7 +86,7 @@ async def list_events(
 async def create_event(data: CalendarEventCreate, current_user: dict = Depends(get_current_user)):
     repo = _get_repo()
     event = repo.create_event({
-        "user_id": current_user["id"],
+        "user_id": current_user["user_id"],
         "title": data.title,
         "description": data.description,
         "start_time": data.start_time,

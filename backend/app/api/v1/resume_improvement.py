@@ -33,7 +33,7 @@ async def improve_resume(data: ResumeImproveRequest, current_user: dict = Depend
 
     service = _get_service()
     result = service.improve_resume(
-        user_id=current_user["id"],
+        user_id=current_user["user_id"],
         original_text=data.original_text,
         improvement_type=data.improvement_type,
         target_job_description=data.target_job_description,
@@ -50,14 +50,14 @@ async def get_improvement_history(
     current_user: dict = Depends(get_current_user),
 ):
     service = _get_service()
-    improvements = service.get_history(current_user["id"], limit=limit)
+    improvements = service.get_history(current_user["user_id"], limit=limit)
     return {"success": True, "data": improvements, "count": len(improvements)}
 
 
 @router.post("/resume/improvements/apply")
 async def mark_improvement_applied(data: MarkApplied, current_user: dict = Depends(get_current_user)):
     service = _get_service()
-    success = service.mark_applied(data.improvement_id, current_user["id"])
+    success = service.mark_applied(data.improvement_id, current_user["user_id"])
     if not success:
         raise HTTPException(status_code=500, detail="Failed to mark as applied")
     return {"success": True}

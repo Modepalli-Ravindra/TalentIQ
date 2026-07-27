@@ -52,7 +52,7 @@ async def list_interviews(
 ):
     repo = _get_repo()
     role = current_user.get("role", "candidate")
-    interviews = repo.list_by_user(current_user["id"], role=role, status=status)
+    interviews = repo.list_by_user(current_user["user_id"], role=role, status=status)
     return {"success": True, "data": interviews, "count": len(interviews)}
 
 
@@ -63,7 +63,7 @@ async def get_upcoming_interviews(
 ):
     repo = _get_repo()
     role = current_user.get("role", "candidate")
-    interviews = repo.get_upcoming(current_user["id"], role=role, limit=limit)
+    interviews = repo.get_upcoming(current_user["user_id"], role=role, limit=limit)
     return {"success": True, "data": interviews, "count": len(interviews)}
 
 
@@ -73,7 +73,7 @@ async def get_interview(interview_id: str, current_user: dict = Depends(get_curr
     interview = repo.get_by_id(interview_id)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
-    uid = current_user["id"]
+    uid = current_user["user_id"]
     if interview.get("candidate_id") != uid and interview.get("recruiter_id") != uid:
         raise HTTPException(status_code=403, detail="Not authorized")
     return {"success": True, "data": interview}
@@ -85,13 +85,13 @@ async def create_interview(data: InterviewCreate, current_user: dict = Depends(g
 
     if repo.check_conflict(data.candidate_id, data.scheduled_at, data.duration_minutes):
         raise HTTPException(status_code=409, detail="Candidate has a scheduling conflict")
-    if repo.check_conflict(current_user["id"], data.scheduled_at, data.duration_minutes):
+    if repo.check_conflict(current_user["user_id"], data.scheduled_at, data.duration_minutes):
         raise HTTPException(status_code=409, detail="You have a scheduling conflict")
 
     interview_data = {
         "job_id": data.job_id,
         "candidate_id": data.candidate_id,
-        "recruiter_id": current_user["id"],
+        "recruiter_id": current_user["user_id"],
         "title": data.title,
         "description": data.description,
         "scheduled_at": data.scheduled_at,
@@ -116,7 +116,7 @@ async def update_interview(
     interview = repo.get_by_id(interview_id)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
-    if interview.get("recruiter_id") != current_user["id"]:
+    if interview.get("recruiter_id") != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Only the recruiter can update")
 
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
@@ -148,7 +148,7 @@ async def submit_feedback(
     interview = repo.get_by_id(interview_id)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
-    if interview.get("recruiter_id") != current_user["id"]:
+    if interview.get("recruiter_id") != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Only the recruiter can submit feedback")
 
     updated = repo.update(interview_id, {
@@ -167,7 +167,7 @@ async def cancel_interview(interview_id: str, current_user: dict = Depends(get_c
     interview = repo.get_by_id(interview_id)
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
-    uid = current_user["id"]
+    uid = current_user["user_id"]
     if interview.get("candidate_id") != uid and interview.get("recruiter_id") != uid:
         raise HTTPException(status_code=403, detail="Not authorized")
 

@@ -32,7 +32,7 @@ async def get_verification_status(current_user: dict = Depends(get_current_user)
     result = (
         client.table("company_verification_requests")
         .select("*")
-        .eq("recruiter_id", current_user["id"])
+        .eq("recruiter_id", current_user["user_id"])
         .order("created_at", desc=True)
         .limit(1)
         .execute()
@@ -48,7 +48,7 @@ async def request_verification(data: VerificationRequest, current_user: dict = D
     existing = (
         client.table("company_verification_requests")
         .select("id, status")
-        .eq("recruiter_id", current_user["id"])
+        .eq("recruiter_id", current_user["user_id"])
         .in_("status", ["pending", "under_review"])
         .execute()
     )
@@ -58,7 +58,7 @@ async def request_verification(data: VerificationRequest, current_user: dict = D
     record = {
         "company_name": data.company_name,
         "company_domain": data.company_domain,
-        "recruiter_id": current_user["id"],
+        "recruiter_id": current_user["user_id"],
         "business_registration_number": data.business_registration_number,
         "tax_id": data.tax_id,
         "verification_documents": data.verification_documents,
@@ -77,7 +77,7 @@ async def get_verification_history(current_user: dict = Depends(get_current_user
     result = (
         client.table("company_verification_requests")
         .select("*")
-        .eq("recruiter_id", current_user["id"])
+        .eq("recruiter_id", current_user["user_id"])
         .order("created_at", desc=True)
         .execute()
     )
@@ -114,7 +114,7 @@ async def admin_review_verification(
         raise HTTPException(status_code=400, detail="Invalid status")
 
     client = _get_client()
-    update = {"status": data.status, "reviewer_id": current_user["id"], "review_notes": data.review_notes}
+    update = {"status": data.status, "reviewer_id": current_user["user_id"], "review_notes": data.review_notes}
     if data.status == "approved":
         from datetime import datetime, timedelta
         update["verified_at"] = datetime.utcnow().isoformat()

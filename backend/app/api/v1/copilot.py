@@ -34,7 +34,7 @@ async def list_conversations(
     current_user: dict = Depends(get_current_user),
 ):
     service = _get_service()
-    conversations = service.list_conversations(current_user["id"], limit=limit)
+    conversations = service.list_conversations(current_user["user_id"], limit=limit)
     return {"success": True, "data": conversations, "count": len(conversations)}
 
 
@@ -42,7 +42,7 @@ async def list_conversations(
 async def create_conversation(data: ConversationCreate, current_user: dict = Depends(get_current_user)):
     service = _get_service()
     conv = service.get_or_create_conversation(
-        user_id=current_user["id"],
+        user_id=current_user["user_id"],
         context_type=data.context_type,
         context_id=data.context_id,
         title=data.title,
@@ -74,7 +74,7 @@ async def send_message(
 async def copilot_chat(data: MessageSend, current_user: dict = Depends(get_current_user)):
     service = _get_service()
     conv = service.get_or_create_conversation(
-        user_id=current_user["id"],
+        user_id=current_user["user_id"],
         context_type=data.context.get("type", "general") if data.context else "general",
         context_id=data.context.get("id") if data.context else None,
         title="Quick chat",
@@ -92,7 +92,7 @@ async def copilot_chat(data: MessageSend, current_user: dict = Depends(get_curre
 @router.delete("/copilot/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str, current_user: dict = Depends(get_current_user)):
     service = _get_service()
-    deleted = service.delete_conversation(conversation_id, current_user["id"])
+    deleted = service.delete_conversation(conversation_id, current_user["user_id"])
     if not deleted:
         raise HTTPException(status_code=500, detail="Failed to delete")
     return {"success": True}
