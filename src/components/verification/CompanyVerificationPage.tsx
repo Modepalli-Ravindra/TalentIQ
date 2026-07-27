@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { verificationApi, type VerificationRequest } from '../../lib/api';
 import { JobCardSkeleton } from '../ui/Skeleton';
 import toast from 'react-hot-toast';

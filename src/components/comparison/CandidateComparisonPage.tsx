@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { comparisonApi, type Comparison, type ComparisonResult } from '../../lib/api';
 import { JobCardSkeleton } from '../ui/Skeleton';
 import toast from 'react-hot-toast';
@@ -14,7 +14,7 @@ export default function CandidateComparisonPage(_props: Props) {
   const [candidateIds, setCandidateIds] = useState('');
   const [jobId, setJobId] = useState('');
   const [comparing, setComparing] = useState(false);
-  const [result, setResult] = useState<ComparisonResult | null>(null);
+  const [result, setResult] = useState<ComparisonResult | Comparison | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const fetchComparisons = useCallback(async () => {
@@ -85,59 +85,63 @@ export default function CandidateComparisonPage(_props: Props) {
         </button>
       </div>
 
-      {result && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
-          <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-400" /> Comparison Results
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left py-2 px-3 text-zinc-400 font-medium">Candidate</th>
-                  <th className="text-left py-2 px-3 text-zinc-400 font-medium">Skills Coverage</th>
-                  <th className="text-left py-2 px-3 text-zinc-400 font-medium">Experience</th>
-                  <th className="text-left py-2 px-3 text-zinc-400 font-medium">Location</th>
-                  <th className="text-left py-2 px-3 text-zinc-400 font-medium">Skills</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.candidates.map((c, i) => (
-                  <tr key={c.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        {i === 0 && <Star className="w-4 h-4 text-amber-400 fill-amber-400" />}
-                        <div>
-                          <p className="text-white font-medium">{c.name}</p>
-                          <p className="text-zinc-500 text-xs">{c.headline || 'No headline'}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${c.skill_coverage}%` }} />
-                        </div>
-                        <span className="text-zinc-300 text-xs">{c.skill_coverage}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 text-zinc-300">{c.experience_years || 0}y</td>
-                    <td className="py-3 px-3 text-zinc-400 text-xs">{c.location || '—'}</td>
-                    <td className="py-3 px-3">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
-                        {c.skills.slice(0, 5).map(s => (
-                          <span key={s} className="px-1.5 py-0.5 bg-zinc-800 rounded text-xs text-zinc-400">{s}</span>
-                        ))}
-                        {c.skills.length > 5 && <span className="text-zinc-500 text-xs">+{c.skills.length - 5}</span>}
-                      </div>
-                    </td>
+      {result && (() => {
+        const compData = 'comparison_data' in result ? result.comparison_data : result;
+        const candidates = compData?.candidates || [];
+        return candidates.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+            <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-blue-400" /> Comparison Results
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    <th className="text-left py-2 px-3 text-zinc-400 font-medium">Candidate</th>
+                    <th className="text-left py-2 px-3 text-zinc-400 font-medium">Skills Coverage</th>
+                    <th className="text-left py-2 px-3 text-zinc-400 font-medium">Experience</th>
+                    <th className="text-left py-2 px-3 text-zinc-400 font-medium">Location</th>
+                    <th className="text-left py-2 px-3 text-zinc-400 font-medium">Skills</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {candidates.map((c: any, i: number) => (
+                    <tr key={c.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          {i === 0 && <Star className="w-4 h-4 text-amber-400 fill-amber-400" />}
+                          <div>
+                            <p className="text-white font-medium">{c.name}</p>
+                            <p className="text-zinc-500 text-xs">{c.headline || 'No headline'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${c.skill_coverage}%` }} />
+                          </div>
+                          <span className="text-zinc-300 text-xs">{c.skill_coverage}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-zinc-300">{c.experience_years || 0}y</td>
+                      <td className="py-3 px-3 text-zinc-400 text-xs">{c.location || '—'}</td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {c.skills?.slice(0, 5).map((s: string) => (
+                            <span key={s} className="px-1.5 py-0.5 bg-zinc-800 rounded text-xs text-zinc-400">{s}</span>
+                          ))}
+                          {c.skills?.length > 5 && <span className="text-zinc-500 text-xs">+{c.skills.length - 5}</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {comparisons.length > 0 && (
         <div className="space-y-3">

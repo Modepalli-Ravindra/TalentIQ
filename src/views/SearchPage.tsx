@@ -160,7 +160,6 @@ export function SearchPage({ onSelectJob, onAnalyzeFit, onSelectCompany, onExter
             )}
           </div>
         )}
-        </div>
 
         {showFilters && activeTab === 'jobs' && (
           <div className="pt-4 border-t border-[#27272A] space-y-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 import { copilotApi, type CopilotMessage, type CopilotConversation } from '../../lib/api';
 import toast from 'react-hot-toast';
 import { Send, Plus, Trash2, MessageSquare, Bot, User, Loader2 } from 'lucide-react';
