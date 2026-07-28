@@ -1,4 +1,5 @@
-const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api/v1';
+const _rawApiUrl = (import.meta as any).env?.VITE_API_URL || '/api/v1';
+const API_BASE = _rawApiUrl.endsWith('/api/v1') ? _rawApiUrl : `${_rawApiUrl.replace(/\/+$/, '')}/api/v1`;
 
 export interface ExternalJob {
   id: string;
