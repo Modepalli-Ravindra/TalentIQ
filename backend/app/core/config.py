@@ -34,7 +34,8 @@ class Settings:
         origin.strip()
         for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://localhost:3000",
+            "http://localhost:5173,http://localhost:3000,"
+            "https://talent-iq-git-main-ravindra-modepallis-projects.vercel.app",
         ).split(",")
         if origin.strip()
     ]
