@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import Optional, List, Dict, Any
 from supabase import Client
 
@@ -132,10 +133,13 @@ class JobRepository:
         page: int = 1,
         per_page: int = 20,
     ) -> Dict:
+        logger.info(f"search_jobs called: page={page}, per_page={per_page}, sort_by={sort_by}, sort_order={sort_order}")
         try:
+            logger.info(f"Querying table '{self.table}'...")
             query = self.client.table(self.table).select("*", count="exact")
 
             if keyword:
+                logger.info(f"Filtering by keyword: {keyword}")
                 query = query.or_(
                     f"title.ilike.%{keyword}%,"
                     f"company_name.ilike.%{keyword}%,"
@@ -156,7 +160,10 @@ class JobRepository:
             offset = (page - 1) * per_page
             query = query.range(offset, offset + per_page - 1)
 
+            logger.info("Executing Supabase query...")
             result = query.execute()
+            logger.info(f"Query returned {len(result.data or [])} rows, count={result.count}")
+
             return {
                 "data": result.data or [],
                 "count": result.count or 0,
@@ -165,7 +172,8 @@ class JobRepository:
                 "total_pages": max(1, ((result.count or 0) + per_page - 1) // per_page),
             }
         except Exception as e:
-            logger.error(f"search_jobs error: {e}")
+            logger.exception(f"search_jobs FAILED: {e}")
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
             return {"data": [], "count": 0, "page": page, "per_page": per_page, "total_pages": 0}
 
     def get_job_by_id(self, job_id: str) -> Optional[Dict]:

@@ -1,3 +1,5 @@
+import logging
+import traceback
 from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional, List
 from app.core.supabase import get_supabase_client
@@ -7,12 +9,17 @@ from app.etl.sync_service import JobSyncService
 from app.etl.scheduler import run_scheduled_sync
 from app.schemas.jobs import ExternalJobResponse, JobSearchRequest, SyncTriggerResponse
 
+logger = logging.getLogger("talentiq.api.jobs")
+
 router = APIRouter()
 
 
 def _get_repo() -> JobRepository:
+    logger.info("Initializing JobRepository...")
     client = get_supabase_client()
-    return JobRepository(client)
+    repo = JobRepository(client)
+    logger.info("JobRepository initialized")
+    return repo
 
 
 @router.post(
@@ -31,17 +38,21 @@ async def trigger_sync(
     max_pages: int = Query(default=10, ge=1, le=50),
     current_user: dict = Depends(get_current_user),
 ):
-    repo = _get_repo()
-    service = JobSyncService(repo)
-    report = await service.sync(max_pages=max_pages)
-    return SyncTriggerResponse(
-        status=report.status,
-        imported=report.imported,
-        updated=report.updated,
-        duplicates=report.duplicates,
-        failed=report.failed,
-        execution_time_seconds=report.execution_time_seconds,
-    )
+    try:
+        repo = _get_repo()
+        service = JobSyncService(repo)
+        report = await service.sync(max_pages=max_pages)
+        return SyncTriggerResponse(
+            status=report.status,
+            imported=report.imported,
+            updated=report.updated,
+            duplicates=report.duplicates,
+            failed=report.failed,
+            execution_time_seconds=report.execution_time_seconds,
+        )
+    except Exception as e:
+        logger.exception(f"trigger_sync FAILED: {e}")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 
 @router.get(
@@ -61,9 +72,15 @@ async def list_jobs(
     sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    repo = _get_repo()
-    result = repo.search_jobs(page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
-    return result
+    try:
+        logger.info(f"GET /jobs page={page} per_page={per_page} sort_by={sort_by} sort_order={sort_order}")
+        repo = _get_repo()
+        result = repo.search_jobs(page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
+        logger.info(f"GET /jobs returned {result.get('count', 0)} total, {len(result.get('data', []))} rows")
+        return result
+    except Exception as e:
+        logger.exception(f"list_jobs FAILED: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}")
 
 
 @router.get(
@@ -88,19 +105,25 @@ async def search_jobs(
     per_page: int = Query(default=20, ge=1, le=100),
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    repo = _get_repo()
-    result = repo.search_jobs(
-        keyword=keyword,
-        location=location,
-        is_remote=is_remote,
-        tags=tags,
-        employment_type=employment_type,
-        sort_by=sort_by,
-        sort_order=sort_order,
-        page=page,
-        per_page=per_page,
-    )
-    return result
+    try:
+        logger.info(f"GET /jobs/search keyword={keyword} location={location}")
+        repo = _get_repo()
+        result = repo.search_jobs(
+            keyword=keyword,
+            location=location,
+            is_remote=is_remote,
+            tags=tags,
+            employment_type=employment_type,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            page=page,
+            per_page=per_page,
+        )
+        logger.info(f"GET /jobs/search returned {result.get('count', 0)} total")
+        return result
+    except Exception as e:
+        logger.exception(f"search_jobs FAILED: {e}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
 @router.get(
@@ -117,14 +140,18 @@ async def recommended_jobs(
     limit: int = Query(default=10, ge=1, le=50),
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    repo = _get_repo()
-    result = repo.search_jobs(
-        tags=skills,
-        per_page=limit,
-        sort_by="published_at",
-        sort_order="desc",
-    )
-    return result
+    try:
+        repo = _get_repo()
+        result = repo.search_jobs(
+            tags=skills,
+            per_page=limit,
+            sort_by="published_at",
+            sort_order="desc",
+        )
+        return result
+    except Exception as e:
+        logger.exception(f"recommended_jobs FAILED: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get recommendations: {str(e)}")
 
 
 @router.get(
@@ -141,8 +168,14 @@ async def get_job(
     job_id: str,
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    repo = _get_repo()
-    job = repo.get_job_by_id(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
+    try:
+        repo = _get_repo()
+        job = repo.get_job_by_id(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return job
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"get_job FAILED: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get job: {str(e)}")
