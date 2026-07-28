@@ -353,3 +353,11 @@ TalentIQ-AI/
 ## License
 
 MIT License. See [LICENSE](./docs/20_LICENSE.md) for details.
+
+---
+
+## Recent Updates
+
+- Fixed CSS layout bug in `Navbar.tsx` that caused navigation overflow on smaller screens.
+- Updated horizontal scrolling layout to accommodate extensive navigation links (`hide-scrollbar`).
+- Resolved missing user avatar and sign out button rendering issue.

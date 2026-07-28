@@ -139,3 +139,10 @@ select:focus-visible {
   white-space: nowrap;
   border-width: 0;
 }
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
