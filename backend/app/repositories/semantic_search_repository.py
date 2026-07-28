@@ -96,9 +96,16 @@ class SemanticSearchRepository:
     def batch_generate_embeddings(self, table: str, batch_size: int = 50) -> int:
         """Generate embeddings for all records in a table that don't have one yet."""
         try:
+            if table == "external_jobs":
+                select_cols = "id, title, description, tags"
+            elif table == "profiles":
+                select_cols = "id, name, skills, bio"
+            else:
+                return 0
+
             result = (
                 self.client.table(table)
-                .select("id, title, description, tags, name, skills, summary, resume_text")
+                .select(select_cols)
                 .is_("embedding", "null")
                 .limit(batch_size)
                 .execute()
@@ -119,7 +126,7 @@ class SemanticSearchRepository:
                     embedding = generate_profile_embedding(
                         name=record.get("name", ""),
                         skills=record.get("skills", []),
-                        summary=record.get("summary", ""),
+                        bio=record.get("bio", ""),
                     )
                 else:
                     continue

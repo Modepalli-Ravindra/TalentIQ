@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, AuthState } from '../types';
 
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = '/api/v1';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;

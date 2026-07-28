@@ -1,4 +1,6 @@
 import os
+import uuid
+from typing import Optional
 from supabase import create_client, Client
 
 _client: Client = None
@@ -13,3 +15,14 @@ def get_supabase_client() -> Client:
             raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
         _client = create_client(url, key)
     return _client
+
+
+def safe_uuid(val: Optional[str]) -> Optional[str]:
+    if not val:
+        return None
+    try:
+        uuid.UUID(val)
+        return val
+    except (ValueError, TypeError):
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, val))
+

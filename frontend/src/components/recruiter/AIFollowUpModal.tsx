@@ -23,7 +23,7 @@ export const AIFollowUpModal: React.FC<AIFollowUpModalProps> = ({ application, o
     try {
       const res = await aiApi.generateEmail(
         type,
-        application.candidateName,
+        application.candidateName || '',
         application.jobTitle,
         application.company,
         `Match score: ${application.matchScore}%`
@@ -34,7 +34,7 @@ export const AIFollowUpModal: React.FC<AIFollowUpModalProps> = ({ application, o
       const msg = e instanceof Error ? e.message : 'Failed to generate email';
       setError(msg);
       setEmailSubject(`Follow-up: ${application.jobTitle}`);
-      setEmailBody(`Hi ${application.candidateName},\n\nThank you for your interest in the ${application.jobTitle} position at ${application.company}. We will be in touch soon.\n\nBest regards,\n${application.company} Recruitment Team`);
+      setEmailBody(`Hi ${application.candidateName || 'Candidate'},\n\nThank you for your interest in the ${application.jobTitle} position at ${application.company}. We will be in touch soon.\n\nBest regards,\n${application.company} Recruitment Team`);
     } finally {
       setLoading(false);
     }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle2, AlertCircle, BookOpen, TrendingUp, DollarSign, Send, Zap, Loader2 } from 'lucide-react';
-import { JobPosting, CandidateProfile } from '../../types';
+import { JobPosting, CandidateProfile, Profile } from '../../types';
 import { aiApi, AIFitResult } from '../../lib/api';
 
 interface AIFitAnalyzerModalProps {
   job: JobPosting;
-  candidate: CandidateProfile;
+  candidate: CandidateProfile | Profile;
   onClose: () => void;
   onApplySuccess: () => void;
 }
@@ -26,12 +26,19 @@ export const AIFitAnalyzerModal: React.FC<AIFitAnalyzerModalProps> = ({
     const analyze = async () => {
       setLoading(true);
       try {
-        const jobDesc = `Title: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description || ''}\nSkills: ${job.tags?.join(', ') || ''}`;
+        const jobSkills = job.skills || job.techStack || [];
+        const jobDesc = `Title: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description || ''}\nSkills: ${jobSkills.join(', ')}`;
+        
+        const candidateSkills = 'parsedSkills' in candidate ? candidate.parsedSkills : (candidate.skills || []);
+        const candidateExperience = 'experience' in candidate ? candidate.experience : [];
+        const candidateEducation = 'education' in candidate ? candidate.education : [];
+        const candidateSummary = 'summary' in candidate ? candidate.summary : ('bio' in candidate ? candidate.bio : '');
+
         const profile = {
-          parsedSkills: candidate.parsedSkills,
-          experience: candidate.experience,
-          education: candidate.education,
-          summary: candidate.summary,
+          parsedSkills: candidateSkills,
+          experience: candidateExperience,
+          education: candidateEducation,
+          summary: candidateSummary,
         };
         const res = await aiApi.fitAnalysis(jobDesc, profile);
         setFit(res.data);

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, Sparkles, X, Loader2, MapPin, Wifi, Tag } from 'lucide-react';
-import { searchApi } from '../../lib/api';
+import { searchApi, SemanticSearchParams } from '../../lib/api';
 
 interface SemanticSearchBarProps {
   onResults: (results: any[], query: string) => void;
@@ -33,7 +33,7 @@ export const SemanticSearchBar: React.FC<SemanticSearchBarProps> = ({
     onLoading?.(true);
 
     try {
-      const params: Record<string, any> = { q: searchQuery, limit: 20 };
+      const params: SemanticSearchParams = { q: searchQuery, limit: 20 };
       if (location) params.location = location;
       if (remoteOnly !== undefined) params.is_remote = remoteOnly;
 

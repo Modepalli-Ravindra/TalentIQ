@@ -2,6 +2,8 @@ import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
+from app.core.supabase import safe_uuid
+
 logger = logging.getLogger("talentiq.repositories.interviews")
 
 
@@ -32,6 +34,8 @@ class InterviewRepository:
 
     def create(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         try:
+            if "job_id" in data and data["job_id"]:
+                data["job_id"] = safe_uuid(data["job_id"])
             result = self.client.table(self.table).insert(data).execute()
             return result.data[0] if result.data else None
         except Exception as e:
@@ -79,7 +83,7 @@ class InterviewRepository:
             result = (
                 self.client.table(self.table)
                 .select("*")
-                .eq("job_id", job_id)
+                .eq("job_id", safe_uuid(job_id))
                 .order("scheduled_at", desc=False)
                 .execute()
             )

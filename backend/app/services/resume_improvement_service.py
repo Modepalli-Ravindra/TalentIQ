@@ -1,7 +1,10 @@
 import logging
 import json
+import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+
+from app.core.supabase import safe_uuid
 
 logger = logging.getLogger("talentiq.services.resume_improvement")
 
@@ -42,7 +45,7 @@ class ResumeImprovementService:
 
             record = {
                 "user_id": user_id,
-                "resume_id": resume_id,
+                "resume_id": safe_uuid(resume_id),
                 "original_text": original_text,
                 "improved_text": result["improved_text"],
                 "improvement_type": improvement_type,
@@ -109,12 +112,28 @@ class ResumeImprovementService:
     def _parse_improvement_response(self, raw: str) -> Dict[str, Any]:
         try:
             text = raw.strip()
-            if text.startswith("```"):
-                text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-                if text.endswith("```"):
-                    text = text[:-3]
-            return json.loads(text)
-        except (json.JSONDecodeError, IndexError):
+            code_block = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+            if code_block:
+                text = code_block.group(1).strip()
+            else:
+                brace_start = text.find("{")
+                if brace_start != -1:
+                    text = text[brace_start:]
+                    brace_depth = 0
+                    for i, ch in enumerate(text):
+                        if ch == "{": brace_depth += 1
+                        elif ch == "}": brace_depth -= 1
+                        if brace_depth == 0:
+                            text = text[:i + 1]
+                            break
+            parsed = json.loads(text)
+            return {
+                "improved_text": parsed.get("improved_text", raw),
+                "suggestions": parsed.get("suggestions", []),
+                "score_before": parsed.get("score_before"),
+                "score_after": parsed.get("score_after"),
+            }
+        except Exception:
             return {
                 "improved_text": raw,
                 "suggestions": [],

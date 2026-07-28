@@ -3,6 +3,8 @@ import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
+from app.core.supabase import safe_uuid
+
 logger = logging.getLogger("talentiq.services.comparison")
 
 
@@ -30,11 +32,12 @@ class ComparisonService:
             if len(candidates) < 2:
                 return None
 
-            comparison = self._build_comparison(candidates, job_id, criteria)
+            db_job_id = safe_uuid(job_id)
+            comparison = self._build_comparison(candidates, db_job_id, criteria)
 
             record = {
                 "recruiter_id": recruiter_id,
-                "job_id": job_id,
+                "job_id": db_job_id,
                 "candidate_ids": candidate_ids,
                 "comparison_data": json.dumps(comparison),
                 "notes": None,

@@ -208,3 +208,41 @@ class TestIntervewEndpointImports:
         assert router is not None
         routes = [r.path for r in router.routes]
         assert "/company/verification" in routes
+
+
+class TestNewFixes:
+    def test_safe_uuid(self):
+        from app.core.supabase import safe_uuid
+        import uuid
+        assert safe_uuid(None) is None
+        assert safe_uuid("") is None
+        valid = str(uuid.uuid4())
+        assert safe_uuid(valid) == valid
+        
+        mock_id = "job-1"
+        hashed = safe_uuid(mock_id)
+        assert hashed != mock_id
+        assert uuid.UUID(hashed)
+        assert safe_uuid(mock_id) == hashed
+
+    def test_resume_improvement_robust_parse(self):
+        from app.services.resume_improvement_service import ResumeImprovementService
+        from unittest.mock import MagicMock
+        service = ResumeImprovementService(MagicMock())
+        
+        raw_standard = '{"improved_text": "hello", "suggestions": ["tip"], "score_before": 10, "score_after": 90}'
+        res = service._parse_improvement_response(raw_standard)
+        assert res["improved_text"] == "hello"
+        assert res["suggestions"] == ["tip"]
+        assert res["score_before"] == 10
+        
+        raw_md = '```json\n{"improved_text": "hello", "suggestions": ["tip"], "score_before": 10, "score_after": 90}\n```'
+        res = service._parse_improvement_response(raw_md)
+        assert res["improved_text"] == "hello"
+        assert res["suggestions"] == ["tip"]
+        
+        raw_messy = 'Here is the response:\n```json\n{"improved_text": "hello", "suggestions": ["tip"]}\n```\nHope this helps!'
+        res = service._parse_improvement_response(raw_messy)
+        assert res["improved_text"] == "hello"
+        assert res["suggestions"] == ["tip"]
+

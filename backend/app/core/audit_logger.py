@@ -29,21 +29,30 @@ class AuditLogger:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
     ) -> None:
-        try:
-            client = self._get_client()
-            record = {
-                "action": action,
-                "resource_type": resource_type,
-                "user_id": user_id,
-                "resource_id": resource_id,
-                "details": details or {},
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-            }
-            client.table("audit_logs").insert(record).execute()
-            logger.debug(f"Audit: {action} {resource_type} by {user_id}")
-        except Exception as e:
-            logger.error(f"Audit log failed: {e}")
+        import threading
+        from app.core.supabase import safe_uuid
+
+        def run_log():
+            try:
+                db_user_id = safe_uuid(user_id)
+                client = self._get_client()
+                record = {
+                    "action": action,
+                    "resource_type": resource_type,
+                    "user_id": db_user_id,
+                    "resource_id": resource_id,
+                    "details": details or {},
+                    "ip_address": ip_address,
+                    "user_agent": user_agent,
+                }
+                client.table("audit_logs").insert(record).execute()
+                logger.debug(f"Audit: {action} {resource_type} by {db_user_id}")
+            except Exception as e:
+                logger.error(f"Audit log failed: {e}")
+
+        thread = threading.Thread(target=run_log)
+        thread.daemon = True
+        thread.start()
 
     def log_auth(self, action: str, user_id: str, ip: str = "", ua: str = "") -> None:
         self.log(action=action, resource_type="auth", user_id=user_id, ip_address=ip, user_agent=ua)

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { jobsApi, aiApi } from '@/lib/api'
 
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch
 
 beforeEach(() => {
   mockFetch.mockReset()

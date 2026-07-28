@@ -3,6 +3,8 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
+from app.core.supabase import safe_uuid
+
 logger = logging.getLogger("talentiq.services.copilot")
 
 
@@ -17,13 +19,14 @@ class CopilotService:
         self, user_id: str, context_type: str = "general", context_id: Optional[str] = None, title: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         try:
-            if context_id:
+            db_context_id = safe_uuid(context_id)
+            if db_context_id:
                 result = (
                     self.client.table(self.conversations_table)
                     .select("*")
                     .eq("user_id", user_id)
                     .eq("context_type", context_type)
-                    .eq("context_id", context_id)
+                    .eq("context_id", db_context_id)
                     .order("updated_at", desc=True)
                     .limit(1)
                     .execute()
@@ -34,7 +37,7 @@ class CopilotService:
             data = {
                 "user_id": user_id,
                 "context_type": context_type,
-                "context_id": context_id,
+                "context_id": db_context_id,
                 "title": title or f"{context_type} conversation",
             }
             result = self.client.table(self.conversations_table).insert(data).execute()
