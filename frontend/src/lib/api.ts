@@ -54,11 +54,17 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers,
   });
+  const text = await response.text();
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`API error ${response.status}: ${error}`);
+    let detail = text;
+    try {
+      const parsed = JSON.parse(text);
+      detail = parsed.detail || parsed.message || text;
+    } catch {}
+    throw new Error(`API error ${response.status}: ${detail}`);
   }
-  return response.json();
+  if (!text) return {} as T;
+  return JSON.parse(text);
 }
 
 export const jobsApi = {

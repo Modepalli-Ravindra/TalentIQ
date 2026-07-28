@@ -39,6 +39,8 @@ class Settings:
         if origin.strip()
     ]
 
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
+
     MAX_BODY_SIZE: int = int(os.getenv("MAX_BODY_SIZE", str(10 * 1024 * 1024)))
     MAX_RESUME_SIZE: int = int(os.getenv("MAX_RESUME_SIZE", str(10 * 1024 * 1024)))
     MAX_AI_PROMPT_LENGTH: int = int(os.getenv("MAX_AI_PROMPT_LENGTH", "20000"))
