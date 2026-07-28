@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 import logging
-import traceback
 
 logger = logging.getLogger("talentiq.exceptions")
 
@@ -93,9 +92,8 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):
-        logger.error(
-            f"Unhandled exception on {request.method} {request.url.path}: {exc}\n"
-            f"{traceback.format_exc()}"
+        logger.exception(
+            f"Unhandled exception on {request.method} {request.url.path}: {exc}"
         )
         return _error_response(
             status_code=500,

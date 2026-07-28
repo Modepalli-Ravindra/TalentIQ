@@ -5,15 +5,42 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  # Ping Render backend every 14 min to prevent free-tier sleep/cold starts
+  schedule:
+    - cron: '*/14 * * * *'
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  BACKEND_URL: https://talentiq-backend-nxvt.onrender.com
 
 jobs:
-  frontend:
-    name: Frontend
+  # ──────────────────────────────────────────────────────────────────
+  # Keep Render backend alive — runs on cron schedule only
+  # ──────────────────────────────────────────────────────────────────
+  keep-alive:
+    name: Keep Render Backend Alive
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          echo "Pinging $BACKEND_URL/health to prevent Render cold start..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL/health" || echo "000")
+          echo "Response status: $STATUS"
+          if [ "$STATUS" = "000" ]; then
+            echo "::warning::Backend did not respond within 60s — may still be waking up"
+          else
+            echo "Backend is awake. HTTP $STATUS"
+          fi
+
+  # ──────────────────────────────────────────────────────────────────
+  # Frontend CI — lint, test, build
+  # ──────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     defaults:
       run:
         working-directory: frontend
@@ -31,18 +58,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript check
+      - name: TypeScript / lint check
         run: npm run lint
 
       - name: Run tests
         run: npm test
 
       - name: Build
+        env:
+          # Vite bakes env vars at build time — these MUST be set here
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
+  # ──────────────────────────────────────────────────────────────────
+  # Backend CI — tests, formatting, lint
+  # ──────────────────────────────────────────────────────────────────
   backend:
-    name: Backend
+    name: Backend CI
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     defaults:
       run:
         working-directory: backend
@@ -61,6 +97,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests with coverage
+        env:
+          # Stub credentials so tests don't need real API keys
+          JWT_SECRET: test-ci-secret-key
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-key
+          GROQ_API_KEY: placeholder-groq-key
         run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
 
       - name: Check code formatting (Black)
@@ -72,6 +115,9 @@ jobs:
       - name: Lint with Ruff
         run: pip install ruff && ruff check app/
 
+  # ──────────────────────────────────────────────────────────────────
+  # Deploy Preview to Vercel (pull_request)
+  # ──────────────────────────────────────────────────────────────────
   deploy-preview:
     name: Deploy Preview (Vercel)
     runs-on: ubuntu-latest
@@ -101,7 +147,11 @@ jobs:
         run: |
           url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> $GITHUB_OUTPUT
+          echo "✅ Preview deployed: $url"
 
+  # ──────────────────────────────────────────────────────────────────
+  # Deploy Production to Vercel (push to main)
+  # ──────────────────────────────────────────────────────────────────
   deploy-production:
     name: Deploy Production (Vercel)
     runs-on: ubuntu-latest
@@ -131,3 +181,10 @@ jobs:
         run: |
           url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> $GITHUB_OUTPUT
+          echo "✅ Production deployed: $url"
+
+      - name: Warm up Render backend after deploy
+        run: |
+          echo "Warming up Render backend post-deploy..."
+          curl -s --max-time 90 "$BACKEND_URL/health" || true
+          echo "Backend warm-up complete."

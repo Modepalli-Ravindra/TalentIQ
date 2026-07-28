@@ -110,9 +110,14 @@ _cors_origins = list(settings.CORS_ORIGINS)
 if settings.FRONTEND_URL and settings.FRONTEND_URL not in _cors_origins:
     _cors_origins.append(settings.FRONTEND_URL)
 
+logger.info(f"CORS allowed origins: {_cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    # Covers ALL Vercel preview / branch-deploy URLs automatically:
+    #   talent-iq-*.vercel.app  and  talent-iq-git-*.vercel.app
+    allow_origin_regex=r"https://talent-iq[a-zA-Z0-9-]*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
